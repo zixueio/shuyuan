@@ -1,0 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "ES2015",
+    "moduleResolution": "bundler",
+    "lib": ["ES2018", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": {
+      "cc": ["./cc-stub.d.ts"]
+    }
+  },
+  "include": [
+    "cc-stub.d.ts",
+    "../assets/scripts/**/*.ts"
+  ]
+}

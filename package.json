@@ -1,6 +1,10 @@
 {
   "name": "shuyuan",
+  "uuid": "8f6c2e1a-3b4d-4e5f-8a9b-0c1d2e3f4a5b",
   "version": "1.0.0",
   "private": true,
+  "creator": {
+    "version": "3.8.4"
+  },
   "description": "书院小掌柜——微信小游戏(全学科模拟经营, IAA)。Cocos Creator 工程, 后端题源/经济走 ruci /mgapi"
 }
