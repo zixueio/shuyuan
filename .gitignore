@@ -1,0 +1,11 @@
+# Cocos Creator 生成物
+library/
+temp/
+local/
+build/
+profiles/
+extensions/
+
+# 系统文件
+.DS_Store
+Thumbs.db
