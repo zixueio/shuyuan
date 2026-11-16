@@ -47,6 +47,7 @@ export class Node {
         TOUCH_CANCEL: string;
     };
     addChild(child: Node): Node;
+    removeAllChildren(): void;
     setPosition(x: number, y: number, z?: number): void;
     setScale(x: number, y: number, z?: number): void;
     on(type: string, cb: (...args: any[]) => void, target?: any): void;

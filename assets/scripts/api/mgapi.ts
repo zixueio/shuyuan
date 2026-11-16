@@ -152,3 +152,22 @@ export function collect(ad: boolean): Promise<any> {
 export function sign(): Promise<any> {
     return authReq('POST', '/mgapi/sign', {});
 }
+
+// ---- 本地存档(JSON 序列化)与静态音频地址 ----
+
+/** 存本地 JSON 存档(跨平台走 wx storage / localStorage) */
+export function saveLocal(key: string, v: any): void {
+    plat.setStorageSync(key, JSON.stringify(v));
+}
+
+/** 读本地 JSON 存档, 无/损坏返回 null */
+export function loadLocal(key: string): any {
+    const s = plat.getStorageSync(key);
+    if (!s) return null;
+    try { return JSON.parse(s); } catch (e) { return null; }
+}
+
+/** atlas 音频目录匿名直链(词光真人发音 + tts-*.mp3 预生成都在这) */
+export function audioUrl(au: string): string {
+    return BASE_URL + '/atlas/audio/uk/' + au;
+}

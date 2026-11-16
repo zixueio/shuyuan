@@ -13,7 +13,7 @@ import {
 } from 'cc';
 import { C, uiNode } from './game/Theme';
 import { Store } from './game/Store';
-import { Home } from './game/Home';
+import { SightJump } from './game/SightJump';
 import { Toast } from './game/Toast';
 
 const { ccclass } = _decorator;
@@ -68,9 +68,8 @@ export class Boot extends Component {
         // ---- 游戏装配 ----
         Toast.bind(root);
         const store = new Store();
-        const home = new Home(store, root);
-        home.build();
-        home.startInit();
+        const game = new SightJump(store, root);
+        game.startInit();
 
         ut.setContentSize(view.getVisibleSize());
     }
