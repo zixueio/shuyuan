@@ -7,9 +7,10 @@
  * 所有数字随 Store 状态刷新; 弹层(答题面板等)挂 overlays 容器。
  */
 import { Node, Color, Graphics, UITransform, Label, UIOpacity, view } from 'cc';
-import { C, uiNode, label, panel, button, fillRect, drawHouse, skinSprite, skin, sfx } from './Theme';
+import { C, uiNode, label, panel, button, fillRect, drawHouse, skinSprite, skin, sfx, popIn, floatUp, breathing, rollNum } from './Theme';
 import { Store, MgState } from './Store';
 import { QuizPanel } from './QuizPanel';
+import { WordForge } from './WordForge';
 import { Toast } from './Toast';
 import { hasRewarded, showRewarded, showBanner } from './Ads';
 
@@ -75,7 +76,6 @@ export class Home {
         sb.setPosition(190, 0, 0);
         this.signBtn = sb;
         this.signLab = sb.children[0] ? sb.children[0].getComponent(Label) : null;
-        skin(sb, 'btn_soft', C.gold);
 
         // 收租条(默认藏, 有离线收益显示)
         const rent = this.rentCard = panel(CARD_W, 96, new Color(255, 240, 210, 255), 20);
@@ -98,17 +98,32 @@ export class Home {
         title.setPosition(0, 360, 0);
         page.addChild(title);
 
-        // 两座建筑卡
-        this.buildBuilding('math', '算学馆', '口算四选一, 答对 2 x 等级 铜钱', C.math, 190);
-        this.buildBuilding('en', '书斋', '看图听音认单词, 答对 3 x 等级 铜钱', C.en, -140);
+        // 三座建筑卡(拼词馆与书斋共用英语等级, 服务端零改动)
+        this.buildBuilding('math', '算学馆', '口算四选一, 答对 2 x 等级 铜钱', C.math, 205, 0.15);
+        this.buildBuilding('en', '书斋', '看图听音认单词, 答对 3 x 等级 铜钱', C.en, -35, 0.25);
+        this.buildBuilding('forge', '拼词馆', '词根词缀拼单词, 与书斋同级同酬', C.green, -275, 0.35, {
+            art: 'bld_forge', playText: '开始拼词',
+            onPlay: () => {
+                if (!this.store.ready) { Toast.show('还在连接书院...', C.red); return; }
+                new WordForge(this.store, this.overlays);
+            },
+        });
 
         // 小书童立绘(AI), 站右下空地
-        skinSprite(page, 'kid_idle', 140, 224).setPosition(290, -330, 0);
+        const kid = skinSprite(page, 'kid_idle', 140, 224);
+        kid.setPosition(290, -460, 0);
 
         // 底部说明(banner 安全区上方)
-        const foot = label('答题赚铜钱 · 建楼升级 · 小书童离线打工', 24, C.ink2, false);
-        foot.setPosition(0, -360, 0);
+        const foot = label('答题 · 拼词 · 建楼升级 · 小书童离线打工', 24, C.ink2, false);
+        foot.setPosition(0, -500, 0);
         page.addChild(foot);
+
+        // 入场动效: HUD 弹出 -> 标题上浮 -> 卡片错峰弹出(buildBuilding 内) -> 书童呼吸待机
+        popIn(hud, 0, 0.3);
+        floatUp(title, 0.1);
+        popIn(kid, 0.45);
+        breathing(kid, 1.6);
+        floatUp(foot, 0.5);
 
         // 初始化占位卡(连接中/失败重试), 登录成功后移除
         this.showInitCard();
@@ -121,49 +136,56 @@ export class Home {
         this.store.on(() => this.refresh());
     }
 
-    /** 一张建筑卡 */
-    private buildBuilding(key: string, name: string, desc: string, color: Color, y: number): void {
-        const card = panel(CARD_W, 270, C.card, 24);
+    /** 一张建筑卡(拼词馆走 opts 覆盖立绘/按钮文案/点击行为) */
+    private buildBuilding(
+        key: string, name: string, desc: string, color: Color, y: number,
+        delay = 0, opts?: { art?: string; playText?: string; onPlay?: () => void },
+    ): void {
+        const art = opts && opts.art ? opts.art : (key === 'math' ? 'bld_math' : 'bld_en');
+        const playText = opts && opts.playText ? opts.playText : '开始答题';
+        const defaultPlay = () => {
+            if (!this.store.ready) { Toast.show('还在连接书院...', C.red); return; }
+            new QuizPanel(this.store, this.overlays, key);
+        };
+        const onPlay = opts && opts.onPlay ? opts.onPlay : defaultPlay;
+
+        const card = panel(CARD_W, 250, C.card, 24);
         card.setPosition(0, y, 0);
         this.page.addChild(card);
         skin(card, 'panel_card');
+        popIn(card, delay);
 
         // 左侧建筑图: Graphics 简笔画兜底, AI 建筑图加载成功后盖在其上
         const icon = uiNode('icon');
-        icon.setPosition(-195, 10, 0);
+        icon.setPosition(-195, 5, 0);
         const ut = icon.addComponent(UITransform);
         ut.setContentSize(150, 150);
         const g = icon.addComponent(Graphics);
         drawHouse(g, 150, 150, color);
-        skinSprite(icon, key === 'math' ? 'bld_math' : 'bld_en', 170, 170);
+        skinSprite(icon, art, 170, 170);
         card.addChild(icon);
 
         // 名称 + 等级
-        const nm = label(name, 38, C.ink, true);
-        nm.setPosition(90, 85, 0);
+        const nm = label(name, 36, C.ink, true);
+        nm.setPosition(90, 80, 0);
         card.addChild(nm);
         const lv = label('Lv.1', 28, C.goldDark, true);
-        lv.setPosition(225, 88, 0);
+        lv.setPosition(225, 83, 0);
         card.addChild(lv);
         this.lvLabs[key] = lv.getComponent(Label);
 
         // 描述
-        const de = label(desc, 24, C.ink2, false);
-        de.setPosition(90, 38, 0);
+        const de = label(desc, 23, C.ink2, false);
+        de.setPosition(90, 34, 0);
         card.addChild(de);
 
-        // 按钮行: 开始答题(AI 青蓝胶囊主按钮) / 升级(AI 米色软按钮)
-        const play = button(card, 250, 92, '开始答题', color, new Color(255, 255, 255, 255), () => {
-            if (!this.store.ready) { Toast.show('还在连接书院...', C.red); return; }
-            new QuizPanel(this.store, this.overlays, key);
-        }, 30);
-        play.setPosition(-100, -70, 0);
-        skin(play, 'btn_main', undefined, 55);
+        // 按钮行: 伪 3D 厚度胶囊(程序绘制, AI 图不再盖 UI 组件)
+        const play = button(card, 250, 88, playText, color, new Color(255, 255, 255, 255), onPlay, 30);
+        play.setPosition(-100, -66, 0);
 
-        const up = this.upBtns[key] = button(card, 230, 92, '升级', C.btnSoft, C.ink, () => this.onUpgrade(key), 28);
-        up.setPosition(175, -70, 0);
+        const up = this.upBtns[key] = button(card, 230, 88, '升级', C.btnSoft, C.ink, () => this.onUpgrade(key), 28);
+        up.setPosition(175, -66, 0);
         this.upLabs[key] = up.children[0] ? up.children[0].getComponent(Label) : null;
-        skin(up, 'btn_soft');
     }
 
     /** 初始化占位卡: 连接中 / 失败可点重试 */
@@ -210,13 +232,15 @@ export class Home {
     refresh(): void {
         const s: MgState | null = this.store.state;
         if (!s) return;
-        if (this.coinsLab) this.coinsLab.string = String(s.coins);
-        if (this.knowLab) this.knowLab.string = String(s.knowledge);
+        // HUD 数字滚动(并发安全, 值不变直接落)
+        if (this.coinsLab) rollNum(this.coinsLab, s.coins);
+        if (this.knowLab) rollNum(this.knowLab, s.knowledge);
         if (this.lvLabs.math) this.lvLabs.math.string = 'Lv.' + s.math_lv;
         if (this.lvLabs.en) this.lvLabs.en.string = 'Lv.' + s.english_lv;
+        if (this.lvLabs.forge) this.lvLabs.forge.string = 'Lv.' + s.english_lv; // 拼词馆与书斋同级
 
-        // 升级按钮文案: 满级/没钱置灰提示, 点击有守卫 Toast
-        ['math', 'en'].forEach(key => {
+        // 升级按钮文案: 满级/没钱置灰提示, 点击有守卫 Toast(forge 与 en 同一英语建筑)
+        ['math', 'en', 'forge'].forEach(key => {
             const lv = key === 'math' ? s.math_lv : s.english_lv;
             const cost = s.upgrade_cost
                 ? (s.upgrade_cost[key === 'math' ? 'math' : 'english'] || 0) : 0;
@@ -281,7 +305,7 @@ export class Home {
         if (s.coins < cost) { Toast.show('铜钱不够, 再答几题吧', C.red); return; }
         this.store.doUpgrade(key === 'math' ? 'math' : 'english').then((r: any) => {
             sfx('coin');
-            Toast.show((key === 'math' ? '算学馆' : '书斋') + '升到 Lv.' + r.lv, C.math);
+            Toast.show((key === 'math' ? '算学馆' : '书斋·拼词馆') + '升到 Lv.' + r.lv, C.math);
         }).catch((e: any) => Toast.show(String(e && e.message || '升级失败'), C.red));
     }
 }

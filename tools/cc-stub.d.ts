@@ -147,6 +147,11 @@ export class AudioClip {
     play(): void;
 }
 
+/** resources.load JSON 资源返回类型, .json 为解析后对象 */
+export class JsonAsset {
+    json: any;
+}
+
 export class BlockInputEvents {}
 
 export class Canvas {

@@ -84,5 +84,42 @@ const WAIT_MS = Number(process.argv[2] || 15000);
     console.log(JSON.stringify(dump, null, 1).slice(0, 8000));
     await page.screenshot({ path: 'tools/preview_shot.png' });
     console.log('=== SHOT saved ===');
+
+    // 点「开始拼词」验证 WordForge 面板: 场景树找按钮 -> 世界坐标换算屏幕像素
+    // (FIXED_HEIGHT 适配: 可见高恒 1280 设计单位, ppu = 画布像素高 / 1280)
+    const clickInfo = await page.evaluate(() => {
+        if (!window.cc || !cc.director) return { found: false, why: 'no cc' };
+        const scene = cc.director.getScene();
+        if (!scene) return { found: false, why: 'no scene' };
+        let target = null;
+        const walk = (n) => {
+            for (const c of n.children || []) {
+                const lab = c.getComponent && c.getComponent('cc.Label');
+                if (lab && lab.string === '开始拼词' && c.parent
+                    && c.parent.getComponent('cc.Graphics')) target = c.parent;
+                walk(c);
+            }
+        };
+        walk(scene);
+        if (!target) return { found: false, why: 'no forge btn' };
+        const wp = target.worldPosition;
+        const canvas = cc.game.canvas;
+        const rect = canvas.getBoundingClientRect();
+        const ppu = rect.height / 1280;
+        return {
+            found: true,
+            x: rect.left + rect.width / 2 + wp.x * ppu,
+            y: rect.top + rect.height / 2 - wp.y * ppu,
+        };
+    });
+    logs.push(`[probe] forge btn: ${JSON.stringify(clickInfo)}`);
+    if (clickInfo.found) {
+        await page.mouse.click(clickInfo.x, clickInfo.y);
+        await new Promise((r) => setTimeout(r, 3000));
+    }
+    await page.screenshot({ path: 'tools/preview_shot_forge.png' });
+    console.log('=== FORGE SHOT saved ===');
+    console.log(`=== CONSOLE AFTER (${logs.length}) ===`);
+    for (const l of logs.slice(-12)) console.log(l);
     await browser.close();
 })().catch((e) => { console.error('PROBE_FAIL', e); process.exit(1); });

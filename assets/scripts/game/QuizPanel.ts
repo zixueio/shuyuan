@@ -7,7 +7,7 @@
  * 答题即提交(answer POST), 每日 200 题上限, capped 后面板显示上限提示不再出题。
  */
 import { Node, Color, Vec3, UITransform, Graphics, Label, UIOpacity, tween, BlockInputEvents } from 'cc';
-import { C, uiNode, label, panel, button, drawPanel, loadSprite, loadAudio, skin, sfx } from './Theme';
+import { C, uiNode, label, panel, button, drawButtonShape, loadSprite, loadAudio, skin, sfx, popIn, floatUp } from './Theme';
 import { Store } from './Store';
 import { Toast } from './Toast';
 import { showRewarded, hasRewarded } from './Ads';
@@ -55,6 +55,7 @@ export class QuizPanel {
         card.setPosition(0, 0, 0);
         skin(card, 'panel_quiz', undefined, 60); // AI 宣纸大卡盖住 Graphics 兜底
         r.addChild(card);
+        popIn(card, 0, 0.25); // 弹跳入场
 
         const title = label(this.kind === 'math' ? '算学馆' : '书斋', 40, this.kind === 'math' ? C.math : C.en, true);
         title.setPosition(0, 470, 0);
@@ -125,7 +126,7 @@ export class QuizPanel {
                 this.choose(i, answerIdx, reward, b);
             }, 30);
             b.setPosition(x, y, 0);
-            skin(b, 'btn_soft');
+            floatUp(b, 0.05 * i, 24); // 选项错峰上浮
             this.optNodes.push(b);
         });
     }
@@ -157,7 +158,6 @@ export class QuizPanel {
                 // 关闭按钮放 body 上层
                 const back = button(this.root.children[0], 220, 90, '返回书院', C.btnSoft, C.ink, () => this.close());
                 back.setPosition(0, -180, 0);
-                skin(back, 'btn_soft');
                 this.busy = false;
                 return;
             }
@@ -262,14 +262,12 @@ function floatCoin(n: Node): void {
     tween(op).delay(0.4).to(0.3, { opacity: 0 }).start();
 }
 
-/** 选项着色(对绿/错红反馈): 先藏 AI 皮肤露出 Graphics 兜底再重绘 */
+/** 选项着色(对绿/错红反馈): 按伪 3D 厚度胶囊重绘, 保持手感一致 */
 function recolor(b: Node, color: Color): void {
-    const s = b.getChildByName('skin');
-    if (s) s.active = false;
     const g = b.getComponent(Graphics);
     if (!g) return;
     const ut = b.getComponent(UITransform);
     const w = ut ? ut.width : OPT_W;
     const h = ut ? ut.height : OPT_H;
-    drawPanel(g, w, h, color, Math.min(20, h / 2));
+    drawButtonShape(g, w, h, color);
 }
