@@ -197,12 +197,14 @@ export class Home {
         // 升级按钮文案: 满级/没钱置灰提示, 点击有守卫 Toast
         ['math', 'en'].forEach(key => {
             const lv = key === 'math' ? s.math_lv : s.english_lv;
+            const cost = s.upgrade_cost
+                ? (s.upgrade_cost[key === 'math' ? 'math' : 'english'] || 0) : 0;
             const b = this.upBtns[key];
             if (!b || !b.isValid) return;
             const l = b.children[0] ? b.children[0].getComponent(Label) : null;
             const full = lv >= MAX_LV;
-            const poor = s.coins < s.upgrade_cost;
-            if (l) l.string = full ? '已满级' : ('升级 -' + s.upgrade_cost);
+            const poor = s.coins < cost;
+            if (l) l.string = full ? '已满级' : ('升级 -' + cost);
             setGrey(b, full || poor);
         });
 
@@ -251,8 +253,10 @@ export class Home {
         const s = this.store.state;
         if (!s) return;
         const lv = key === 'math' ? s.math_lv : s.english_lv;
+        const cost = s.upgrade_cost
+            ? (s.upgrade_cost[key === 'math' ? 'math' : 'english'] || 0) : 0;
         if (lv >= MAX_LV) { Toast.show('已经满级啦', C.ink2); return; }
-        if (s.coins < s.upgrade_cost) { Toast.show('铜钱不够, 再答几题吧', C.red); return; }
+        if (s.coins < cost) { Toast.show('铜钱不够, 再答几题吧', C.red); return; }
         this.store.doUpgrade(key === 'math' ? 'math' : 'english').then((r: any) => {
             Toast.show((key === 'math' ? '算学馆' : '书斋') + '升到 Lv.' + r.lv, C.math);
         }).catch((e: any) => Toast.show(String(e && e.message || '升级失败'), C.red));

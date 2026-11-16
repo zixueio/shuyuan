@@ -16,7 +16,7 @@ export interface MgState {
     knowledge: number;
     math_lv: number;
     english_lv: number;
-    upgrade_cost: number;
+    upgrade_cost: {[b: string]: number};   // 服务端按建筑给: {math, english}
     offline_coins: number;
     can_sign: boolean;
 }
@@ -94,7 +94,7 @@ export class Store {
                 s.coins = r.coins;
                 s.math_lv = r.math_lv;
                 s.english_lv = r.english_lv;
-                s.upgrade_cost = r.lv * 50; // 下一级费用 = 当前等级 x 50(上限 5 级)
+                s.upgrade_cost[building] = r.lv * 50; // 下一级费用 = 当前等级 x 50(上限 5 级)
                 this.emit();
             }
             return r;

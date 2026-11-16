@@ -55,7 +55,9 @@ export class Boot extends Component {
         (cam as any).far = 2000;
         cam.orthoHeight = view.getVisibleSize().height / 2;
         canvasComp.cameraComponent = cam;
-        canvasComp.alignWithScreen();
+        // 注意: 3.8.8 的 Canvas 没有 alignWithScreen()（cc-stub 曾误声明导致
+        // tsc 放行、运行时 TypeError 把整个 onLoad 掐断、页面只剩空场景底色）,
+        // Canvas 挂 Widget 会自动对齐屏幕, 不需要手动调
 
         scene.addChild(canvasN);
 

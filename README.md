@@ -40,6 +40,33 @@ npm i --no-save typescript --registry=https://registry.npmmirror.com
 npx tsc -p tools/tsconfig.check.json   # 'cc' 映射到 tools/cc-stub.d.ts, 零输出=全绿
 ```
 
+## 预览排障（2026-11-16 五连根因实战）
+
+点编辑器「预览」只出米黄底无 UI 时按序排查（运行时报错只进**浏览器 F12
+console**，编辑器 Console 看不到）：
+
+1. 预览前先在编辑器**双击打开 main.scene**——预览页硬编码
+   `settings.js?scene=current_scene`，没开场景时 launchScene 为空串，
+   引擎永远停在默认空场景（tools/preview_probe.js 用 loadAny uuid 手动
+   runScene 绕过）；
+2. 引擎 API 以 3.8 为准：Canvas 无 `alignWithScreen()`（Widget 自动对齐）、
+   `Label.Align` 是 2.x 老写法（3.x 用独立枚举 `HorizontalTextAlignment` /
+   `VerticalTextAlignment`）——运行时 undefined 直接 TypeError 掐断
+   Boot.onLoad；手写的 cc-stub.d.ts 让 tsc 全绿≠运行时真存在，stub 必须
+   镜像真实 API；
+3. 浏览器预览没有全局 `wx`：mgapi.ts 已用 `typeof wx !== 'undefined' ? wx :
+   WebShim` 适配（WebShim=localStorage+fetch 模拟同名三接口），小游戏端
+   wx 路径不受影响；
+4. 预览源 localhost:7456 受 CORS 管束：ruci mgapi.py 已加固定白名单
+   after_request（OPTIONS 预检把 Access-Control-Request-Headers 原样回进
+   Allow-Headers）；
+5. 编辑器**聚焦才重编译**：改完 .ts 不回编辑器点一下，temp/ 下的旧 chunk
+   不会更新（排障时可临时直接改 temp/programming/packer-driver/targets/
+   下的编译产物验证，回编辑器触发重编译后会被正常产物取代）。
+
+无头复验：`node tools/preview_probe.js 12000`——console 零错误 + 截图
+tools/preview_shot.png 应见完整主界面（铜钱 100/签到/两卡/升级 -50）。
+
 ## 上线前置（MP 后台手动办）
 
 1. 定名「书院小掌柜」查重注册微信小游戏账号（企业主体; 失败按备选:

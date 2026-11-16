@@ -76,16 +76,23 @@ export class Label {
     fontSize: number;
     lineHeight: number;
     color: Color;
-    horizontalAlign: number;
-    verticalAlign: number;
+    horizontalAlign: HorizontalTextAlignment;
+    verticalAlign: VerticalTextAlignment;
     isBold: boolean;
-    static Align: {
-        CENTER: number;
-        LEFT: number;
-        RIGHT: number;
-        TOP: number;
-        BOTTOM: number;
-    };
+    // 注意: 3.x 的 Label 没有静态 Align（那是 2.x 老写法, 运行时 undefined）,
+    // 对齐用独立枚举 HorizontalTextAlignment/VerticalTextAlignment（2026-11-16 踩过）
+}
+
+export declare enum HorizontalTextAlignment {
+    LEFT = 0,
+    CENTER = 1,
+    RIGHT = 2,
+}
+
+export declare enum VerticalTextAlignment {
+    TOP = 0,
+    CENTER = 1,
+    BOTTOM = 2,
 }
 
 export class Graphics {
@@ -128,7 +135,8 @@ export class BlockInputEvents {}
 
 export class Canvas {
     cameraComponent: any;
-    alignWithScreen(): void;
+    // 3.8.8 没有 alignWithScreen()——曾误声明此方法导致 tsc 放行、
+    // 运行时 TypeError 掐断 Boot.onLoad（2026-11-16）
 }
 
 export class Camera {

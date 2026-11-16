@@ -12,12 +12,38 @@ const BASE_URL = 'https://mweb.cn';
 const TOK_KEY = 'mg_token';
 const ACC_KEY = 'mg_account';
 
+/**
+ * 平台适配: 微信小游戏用全局 wx; 浏览器预览(localhost:7456)没有 wx,
+ * 兜底 shim 用 localStorage + fetch 模拟同名三个接口(getStorageSync /
+ * setStorageSync / request), 让预览也能跑通完整登录链(2026-11-16)。
+ */
+const WebShim = {
+    getStorageSync(key: string): string {
+        try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
+    },
+    setStorageSync(key: string, v: any): void {
+        try { localStorage.setItem(key, String(v)); } catch (e) { /* 忽略 */ }
+    },
+    request(opt: any): void {
+        const init: any = { method: opt.method || 'GET', headers: opt.header || {} };
+        if (opt.data !== undefined && opt.data !== null) init.body = JSON.stringify(opt.data);
+        fetch(opt.url, init).then(async (r) => {
+            let data: any = null;
+            try { data = JSON.parse(await r.text()); } catch (e) { /* 非 JSON 置 null */ }
+            if (opt.success) opt.success({ statusCode: r.status, data: data });
+        }).catch((e) => {
+            if (opt.fail) opt.fail({ errMsg: 'request:fail ' + ((e && e.message) || '') });
+        });
+    },
+};
+const plat: any = typeof wx !== 'undefined' ? wx : WebShim;
+
 function req(method: string, path: string, data: any): Promise<any> {
     return new Promise((resolve, reject) => {
         const header: {[k: string]: string} = {'content-type': 'application/json'};
-        const tok = wx.getStorageSync(TOK_KEY);
+        const tok = plat.getStorageSync(TOK_KEY);
         if (tok) header.Authorization = 'Bearer ' + tok;
-        wx.request({
+        plat.request({
             url: BASE_URL + path,
             method: method,
             data: data,
@@ -37,11 +63,11 @@ function req(method: string, path: string, data: any): Promise<any> {
 }
 
 export function hasToken(): boolean {
-    return !!wx.getStorageSync(TOK_KEY);
+    return !!plat.getStorageSync(TOK_KEY);
 }
 
 export function savedAccount(): any {
-    return wx.getStorageSync(ACC_KEY) || null;
+    return plat.getStorageSync(ACC_KEY) || null;
 }
 
 /** 登录态失效时用本地存的账号密码静默重登, 失败返回 null */
@@ -65,8 +91,8 @@ function authReq(method: string, path: string, data: any): Promise<any> {
 /** 游客一键注册(空 body): 服务端随机账号密码, 返回含 token/state */
 export function guestRegister(): Promise<any> {
     return req('POST', '/mgapi/register', {}).then((j: any) => {
-        wx.setStorageSync(TOK_KEY, j.token);
-        wx.setStorageSync(ACC_KEY, {username: j.username, password: j.password});
+        plat.setStorageSync(TOK_KEY, j.token);
+        plat.setStorageSync(ACC_KEY, {username: j.username, password: j.password});
         return j;
     });
 }
@@ -76,8 +102,8 @@ export function register(username: string, password: string, confirm?: string): 
     return req('POST', '/mgapi/register',
         {username: username, password: password, confirm: confirm || password})
         .then((j: any) => {
-            wx.setStorageSync(TOK_KEY, j.token);
-            wx.setStorageSync(ACC_KEY, {username: j.username, password: password});
+            plat.setStorageSync(TOK_KEY, j.token);
+            plat.setStorageSync(ACC_KEY, {username: j.username, password: password});
             return j;
         });
 }
@@ -86,8 +112,8 @@ export function register(username: string, password: string, confirm?: string): 
 export function login(username: string, password: string): Promise<any> {
     return req('POST', '/mgapi/login', {username: username, password: password})
         .then((j: any) => {
-            wx.setStorageSync(TOK_KEY, j.token);
-            wx.setStorageSync(ACC_KEY, {username: username, password: password});
+            plat.setStorageSync(TOK_KEY, j.token);
+            plat.setStorageSync(ACC_KEY, {username: username, password: password});
             return j;
         });
 }

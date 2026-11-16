@@ -7,6 +7,7 @@
 import {
     Node, Label, Graphics, Color, UITransform, Layers, Vec3,
     UIOpacity, tween, Sprite, SpriteFrame, Texture2D, assetManager, AudioClip,
+    HorizontalTextAlignment, VerticalTextAlignment,
 } from 'cc';
 
 export const C = {
@@ -41,8 +42,9 @@ export function label(str: string, size: number, color: Color, bold = false): No
     l.fontSize = size;
     l.lineHeight = size + 10;
     l.color = color;
-    l.horizontalAlign = Label.Align.CENTER;
-    l.verticalAlign = Label.Align.CENTER;
+    // 3.x 用独立枚举(Label.Align 是 2.x 老写法, 3.8 运行时 undefined 直接 TypeError)
+    l.horizontalAlign = HorizontalTextAlignment.CENTER;
+    l.verticalAlign = VerticalTextAlignment.CENTER;
     l.isBold = bold;
     return n;
 }
