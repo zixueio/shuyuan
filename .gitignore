@@ -5,6 +5,7 @@ local/
 build/
 profiles/
 extensions/
+.creator/
 
 # 本地校验工具(node)
 node_modules/

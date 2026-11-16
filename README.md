@@ -16,7 +16,7 @@
 
 ## 用 Cocos Creator 打开
 
-1. Cocos Dashboard → 项目 → 导入本目录（package.json 已带 creator 3.8.4 工程标记）
+1. Cocos Dashboard → 项目 → 导入本目录（package.json creator 标记 3.8.8，3.8 系任一补丁版均可打开）
 2. 打开 `assets/scenes/main.scene`, 点预览即跑（场景只挂 Boot, 其余全代码构建）
 3. 构建发布: 平台选「微信小游戏」, AppID 填小游戏后台拿到的
 4. 微信开发者工具导入 `build/wechatgame` 预览
