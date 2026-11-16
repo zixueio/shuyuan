@@ -91,9 +91,22 @@ console**，编辑器 Console 看不到）：
 5. 编辑器**聚焦才重编译**：改完 .ts 不回编辑器点一下，temp/ 下的旧 chunk
    不会更新（排障时可临时直接改 temp/programming/packer-driver/targets/
    下的编译产物验证，回编辑器触发重编译后会被正常产物取代）。
+   聚焦已脚本化：`powershell -ExecutionPolicy Bypass -File tools/focus_editor.ps1`
+   ——单发 SetForegroundWindow 不够，脚本用「最小化→还原→前台」三连才真正
+   触发重编译（输出 `fgIsTarget=True` 后 grep temp/ 里应出现新代码如 skinSprite）；
+6. 图片 meta **import 类型必须是 sprite-frame**：编辑器自动导入的
+   assets/resources/ui/*.png.meta 顶层 `userData.type` 可能落成 `"texture"`
+   ——此时只有 6c48a 纹理子资源、**没有 f9941 spriteFrame 子资源**，
+   `resources.load('ui/x/spriteFrame')` 全部静默失败（错误串签名：
+   `"Bundle resources doesn't contain ui/x/spriteFrame"`），Theme.ts 按设计
+   静默回退 Graphics 兜底 → 界面可玩但全无 AI 图。修法：把 meta 的
+   userData.type 翻成 `"sprite-frame"` + touch 图片文件（mtime+1）→ 聚焦
+   编辑器重导入；重导入成功判据 = meta subMetas 出现 `f9941` 且
+   `library/<uuid>/@f9941.json` 生成（本次 10 张图全部踩中，2026-11-16 实测修复）。
 
 无头复验：`node tools/preview_probe.js 12000`——console 零错误 + 截图
-tools/preview_shot.png 应见完整主界面（铜钱 100/签到/两卡/升级 -50）。
+tools/preview_shot.png 应见完整主界面（AI 庭院背景 + 纸 HUD 铜钱 100/学识 0
++ 金签到 + 算学馆/书斋两卡带建筑图标与光泽按钮 + 右下小书童）。
 
 ## 上线前置（MP 后台手动办）
 
