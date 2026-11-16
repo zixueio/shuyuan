@@ -7,7 +7,7 @@
  * 答题即提交(answer POST), 每日 200 题上限, capped 后面板显示上限提示不再出题。
  */
 import { Node, Color, Vec3, UITransform, Graphics, Label, UIOpacity, tween, BlockInputEvents } from 'cc';
-import { C, uiNode, label, panel, button, drawPanel, loadSprite, loadAudio } from './Theme';
+import { C, uiNode, label, panel, button, drawPanel, loadSprite, loadAudio, skin, sfx } from './Theme';
 import { Store } from './Store';
 import { Toast } from './Toast';
 import { showRewarded, hasRewarded } from './Ads';
@@ -53,6 +53,7 @@ export class QuizPanel {
 
         const card = panel(CARD_W, 1040, C.card, 24);
         card.setPosition(0, 0, 0);
+        skin(card, 'panel_quiz', undefined, 60); // AI 宣纸大卡盖住 Graphics 兜底
         r.addChild(card);
 
         const title = label(this.kind === 'math' ? '算学馆' : '书斋', 40, this.kind === 'math' ? C.math : C.en, true);
@@ -124,6 +125,7 @@ export class QuizPanel {
                 this.choose(i, answerIdx, reward, b);
             }, 30);
             b.setPosition(x, y, 0);
+            skin(b, 'btn_soft');
             this.optNodes.push(b);
         });
     }
@@ -133,6 +135,7 @@ export class QuizPanel {
         if (this.busy || this.closing) return;
         this.busy = true;
         const correct = idx === answerIdx;
+        sfx(correct ? 'right' : 'wrong');
 
         // 对项标绿, 误选标红
         this.optNodes.forEach((b, i) => {
@@ -154,6 +157,7 @@ export class QuizPanel {
                 // 关闭按钮放 body 上层
                 const back = button(this.root.children[0], 220, 90, '返回书院', C.btnSoft, C.ink, () => this.close());
                 back.setPosition(0, -180, 0);
+                skin(back, 'btn_soft');
                 this.busy = false;
                 return;
             }
@@ -258,8 +262,10 @@ function floatCoin(n: Node): void {
     tween(op).delay(0.4).to(0.3, { opacity: 0 }).start();
 }
 
-/** 选项着色(重绘底色) */
+/** 选项着色(对绿/错红反馈): 先藏 AI 皮肤露出 Graphics 兜底再重绘 */
 function recolor(b: Node, color: Color): void {
+    const s = b.getChildByName('skin');
+    if (s) s.active = false;
     const g = b.getComponent(Graphics);
     if (!g) return;
     const ut = b.getComponent(UITransform);

@@ -50,6 +50,8 @@ export class Node {
     setPosition(x: number, y: number, z?: number): void;
     on(type: string, cb: (...args: any[]) => void, target?: any): void;
     off(type: string, cb?: (...args: any[]) => void, target?: any): void;
+    setSiblingIndex(index: number): void;
+    getChildByName(name: string): Node | null;
     addComponent<T>(type: new (...args: any[]) => T): T;
     addComponent(type: any): any;
     getComponent<T>(type: new (...args: any[]) => T): T | null;
@@ -115,12 +117,24 @@ export class UIOpacity {
 
 export class Sprite {
     sizeMode: any;
+    type: any;
+    color: Color;
     spriteFrame: SpriteFrame | null;
     static SizeMode: { CUSTOM: any; TRIMMED: any; RAW: any };
+    static Type: { SIMPLE: any; SLICED: any; TILED: any; FILLED: any };
+}
+
+export class Rect {
+    constructor(x?: number, y?: number, width?: number, height?: number);
+    x: number;
+    y: number;
+    width: number;
+    height: number;
 }
 
 export class SpriteFrame {
     texture: any;
+    border: Rect;
 }
 
 export class Texture2D {
@@ -172,6 +186,11 @@ export const _decorator: {
 
 export const assetManager: {
     loadRemote(url: string, cb: (err: Error | null, asset: any) => void): void;
+};
+
+/** assets/resources 内置资源包(打包进小游戏, 不走域名白名单) */
+export const resources: {
+    load(path: string, type: any, cb: (err: Error | null, asset: any) => void): void;
 };
 
 export function tween(target?: any): TweenStub;

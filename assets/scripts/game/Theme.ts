@@ -1,13 +1,14 @@
 /**
  * 书院小掌柜 — 主题配色 + 代码 UI 工厂
  *
- * 全部 UI 运行时构建(无美术资源): 面板/文字/按钮都用 Graphics 画底 + Label 写字,
- * 新建节点必须设 layer = UI_2D, 否则 UI 相机 visibility 不含该层, 节点不可见不可点。
+ * UI 运行时构建: Graphics 画兜底底板 + Label 写字, AI 素材(skin()/skinSprite())
+ * 加载成功后盖在兜底之上; 音效走 sfx()。新建节点必须设 layer = UI_2D,
+ * 否则 UI 相机 visibility 不含该层, 节点不可见不可点。
  */
 import {
     Node, Label, Graphics, Color, UITransform, Layers, Vec3,
     UIOpacity, tween, Sprite, SpriteFrame, Texture2D, assetManager, AudioClip,
-    HorizontalTextAlignment, VerticalTextAlignment,
+    HorizontalTextAlignment, VerticalTextAlignment, resources, Rect,
 } from 'cc';
 
 export const C = {
@@ -102,6 +103,7 @@ export function button(
     n.on(Node.EventType.TOUCH_CANCEL, up);
     n.on(Node.EventType.TOUCH_END, () => {
         up();
+        sfx('click');
         onTap();
     });
     parent.addChild(n);
@@ -148,5 +150,72 @@ export function loadSprite(url: string, done: (n: Node | null) => void): Node {
 export function loadAudio(url: string, cb: (clip: AudioClip | null) => void): void {
     assetManager.loadRemote(url, (err: Error | null, clip: any) => {
         cb(err || !clip ? null : clip as AudioClip);
+    });
+}
+
+/* ---------- AI 素材换肤(assets/resources 内置资源, 加载失败走 Graphics 兜底) ---------- */
+
+const _frames: { [k: string]: SpriteFrame | null | undefined } = {};
+
+/** 内置 SpriteFrame 加载(带缓存; 值 null=已知失败, 不再重复请求) */
+function loadFrame(name: string, done: (sf: SpriteFrame | null) => void): void {
+    const hit = _frames[name];
+    if (hit !== undefined) { done(hit || null); return; }
+    resources.load('ui/' + name + '/spriteFrame', SpriteFrame, (err: Error | null, sf: any) => {
+        const ok: SpriteFrame | null = (!err && sf) ? sf as SpriteFrame : null;
+        _frames[name] = ok;
+        done(ok);
+    });
+}
+
+/**
+ * 给宿主节点加一张 AI 图子节点(名为 'skin'), 盖在宿主 Graphics 兜底之上。
+ * w/h 缺省取宿主 UITransform; border>0 时按九宫格拉伸(圆角按钮/纸面板不变形)。
+ * tint 乘色染色: 米色底图 x 主题色 = 带纹理的彩色按钮。
+ */
+export function skinSprite(
+    host: Node, name: string, w?: number, h?: number,
+    tint?: Color, border = 0, done?: (n: Node | null) => void,
+): Node {
+    const ut = host.getComponent(UITransform);
+    const sw = w || (ut ? ut.width : 200);
+    const sh = h || (ut ? ut.height : 100);
+    const n = uiNode('skin');
+    n.addComponent(UITransform).setContentSize(sw, sh);
+    const sp = n.addComponent(Sprite);
+    sp.sizeMode = Sprite.SizeMode.CUSTOM;
+    if (tint) sp.color = tint;
+    host.addChild(n);
+    loadFrame(name, (sf) => {
+        if (!sf) { if (done) done(null); return; }
+        if (border > 0) {
+            sf.border = new Rect(border, border, border, border);
+            sp.type = Sprite.Type.SLICED;
+        }
+        sp.spriteFrame = sf;
+        if (done) done(n);
+    });
+    return n;
+}
+
+/** 按钮/纸面板换肤: skin 子节点压到最底层(文字标签留上层) */
+export function skin(n: Node, art: string, tint?: Color, border = 70): void {
+    const s = skinSprite(n, art, undefined, undefined, tint, border);
+    s.setSiblingIndex(0);
+}
+
+const _clips: { [k: string]: AudioClip | null | undefined } = {};
+
+/** 内置音效(click/coin/right/wrong), 加载结果缓存 */
+export function sfx(name: string): void {
+    const hit = _clips[name];
+    if (hit !== undefined) {
+        if (hit) { try { hit.play(); } catch (e) { /* ignore */ } }
+        return;
+    }
+    resources.load('sfx/' + name, AudioClip, (err: Error | null, clip: any) => {
+        const ok: AudioClip | null = (!err && clip) ? clip as AudioClip : null;
+        _clips[name] = ok;
+        if (ok) { try { ok.play(); } catch (e) { /* ignore */ } }
     });
 }

@@ -10,9 +10,12 @@
 - 后端: 复用 ruci 服务器 `/mgapi/*`（契约见 `docs/api.md`）, 账号/题源零新建
 - API 封装: `assets/scripts/api/mgapi.ts`（wx.request Promise 化 + 401 静默重登）
 - 交互: 全四选一点按, 不做键盘输入（儿童手机端友好）
-- 零美术: 全部 UI 运行时 Graphics 手绘（`assets/scripts/game/Theme.ts` UI 工厂）,
-  场景文件极简（`assets/scenes/main.scene` = Scene + Boot 节点 + Boot 组件）,
-  Canvas/相机/整页 UI 都由 `assets/scripts/Boot.ts` onLoad 运行时构建
+- 美术双层: 全部 UI 运行时 Graphics 手绘兜底（`assets/scripts/game/Theme.ts`
+  UI 工厂）, AI 素材（智谱 CogView 出图 + numpy 合成音效, 见 `assets/resources/`）
+  经 `Theme.skin()/skinSprite()/sfx()` 加载成功后盖在兜底之上, 加载失败静默
+  回退纯手绘——两种形态都可玩; 场景文件极简（`assets/scenes/main.scene` =
+  Scene + Boot 节点 + Boot 组件）, Canvas/相机/整页 UI 都由
+  `assets/scripts/Boot.ts` onLoad 运行时构建
 
 ## 用 Cocos Creator 打开
 
@@ -39,6 +42,31 @@ meta 固定 uuid `3f7a2c9e-8d1b-4e6f-a5c3-9b0d8e7f1a2c`; 删了 meta 会被编�
 npm i --no-save typescript --registry=https://registry.npmmirror.com
 npx tsc -p tools/tsconfig.check.json   # 'cc' 映射到 tools/cc-stub.d.ts, 零输出=全绿
 ```
+
+## AI 素材管线（全 AI 产出, 零外包零版权风险）
+
+```bash
+# 出图(智谱 CogView; cogview-4 系余额不足会自动兜底到免费的 cogview-3-flash)
+ZP_KEY=<智谱key> python tools/gen_art.py             # 缺失的原图 -> tools/art_raw/ (--all 强制重生成)
+python tools/process_art.py                          # 去水印/去背/裁剪/缩放 -> assets/resources/ui/
+python tools/gen_sfx.py                              # numpy 合成音效 -> assets/resources/sfx/
+```
+
+- 风格一致性: gen_art.py `STYLE` 前缀（Q版中国古风/扁平水彩/米黄+青蓝/厚棕
+  描边）每张图原样携带; 负向约束直接写进 prompt（没有圆形背景框/没有投影/白底）
+- 水印: 免费档出图右下角自带「AI生成」灰水印——切图素材填白即可（主体居中
+  角落必是背景）; bg_main 整图不能填白, 走同高度左侧干净地面块羽化贴补
+  （process_art.py `_patch_watermark`）
+- 去背: 严格阈值 bbox(裁掉浅灰投影) → 边缘 floodfill 挖白 → 1px erode 去白晕
+  → P 模式 256 色压缩; bg_main 不去背按 720:1280 居中裁
+- 已知上限: cogview-3-flash 渲染不了准确汉字——title_logo 两轮生成均乱字,
+  按预案弃图走 Label 文字标题（将来给付费模型充值可 `--all` 重出再接线）
+- 换肤接线: 面板 `skin(n,'panel_card')` / 答题大卡
+  `skin(card,'panel_quiz',undefined,60)` / 主按钮
+  `skin(b,'btn_main',undefined,55)` / 软按钮 `skin(b,'btn_soft')`——tint 乘色
+  染色让同一张米色底图变金/绿/青多彩按钮, border=九宫格边距防圆角拉伸变形;
+  对错反馈 recolor() 先藏 skin 露出 Graphics 兜底再重绘纯色
+- QA 拼图: `tools/art_montage.png` 一图速览全部产物
 
 ## 预览排障（2026-11-16 五连根因实战）
 

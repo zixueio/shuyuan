@@ -6,8 +6,8 @@
  *   -> 算学馆卡 / 书斋卡(答题+升级) -> 底部提示(预留 banner 安全区)
  * 所有数字随 Store 状态刷新; 弹层(答题面板等)挂 overlays 容器。
  */
-import { Node, Color, Graphics, UITransform, Label, UIOpacity } from 'cc';
-import { C, uiNode, label, panel, button, fillRect, drawHouse } from './Theme';
+import { Node, Color, Graphics, UITransform, Label, UIOpacity, view } from 'cc';
+import { C, uiNode, label, panel, button, fillRect, drawHouse, skinSprite, skin, sfx } from './Theme';
 import { Store, MgState } from './Store';
 import { QuizPanel } from './QuizPanel';
 import { Toast } from './Toast';
@@ -28,6 +28,7 @@ export class Home {
     private rentLab: Label | null = null;
     private lvLabs: { [k: string]: Label | null } = { math: null, en: null };
     private upBtns: { [k: string]: Node | null } = { math: null, en: null };
+    private upLabs: { [k: string]: Label | null } = { math: null, en: null };
     private signBtn: Node | null = null;
     private signLab: Label | null = null;
     private initCard: Node | null = null;
@@ -39,24 +40,34 @@ export class Home {
 
     build(): void {
         const page = this.page = uiNode('page');
-        // 背景: 全屏米黄(超绘防露边) + 顶部色带
-        page.addChild(fillRect(2000, 3000, C.bg));
+        // 背景: 米黄纯色兜底(超绘防露边), AI 庭院图按 cover 铺满盖在其上
+        const bgf = fillRect(2000, 3000, C.bg);
+        page.addChild(bgf);
+        const vs = view.getVisibleSize();
+        const cov = Math.max(vs.width / 720, vs.height / 1280);
+        skinSprite(bgf, 'bg_main', Math.ceil(720 * cov), Math.ceil(1280 * cov));
         const band = fillRect(2000, 260, C.band);
         band.setPosition(0, 640, 0);
+        band.active = false; // AI 背景自带天空, 色带只在纯色兜底时才有意义
         page.addChild(band);
 
-        // 顶部 HUD 卡
+        // 顶部 HUD 卡(AI 纸面板 + 铜钱/卷轴图标 + 裸数字)
         const hud = panel(CARD_W, 104, C.card, 20);
         hud.setPosition(0, 560, 0);
         page.addChild(hud);
+        skin(hud, 'panel_card');
 
-        const coins = label('铜钱 0', 30, C.goldDark, true);
-        coins.setPosition(-175, 0, 0);
+        const icCoin = skinSprite(hud, 'icon_coin', 40, 40);
+        icCoin.setPosition(-238, 0, 0);
+        const coins = label('0', 30, C.goldDark, true);
+        coins.setPosition(-168, 0, 0);
         hud.addChild(coins);
         this.coinsLab = coins.getComponent(Label);
 
-        const know = label('学识 0', 30, C.math, true);
-        know.setPosition(10, 0, 0);
+        const icKnow = skinSprite(hud, 'icon_know', 44, 35);
+        icKnow.setPosition(-54, 0, 0);
+        const know = label('0', 30, C.math, true);
+        know.setPosition(28, 0, 0);
         hud.addChild(know);
         this.knowLab = know.getComponent(Label);
 
@@ -64,11 +75,13 @@ export class Home {
         sb.setPosition(190, 0, 0);
         this.signBtn = sb;
         this.signLab = sb.children[0] ? sb.children[0].getComponent(Label) : null;
+        skin(sb, 'btn_soft', C.gold);
 
         // 收租条(默认藏, 有离线收益显示)
         const rent = this.rentCard = panel(CARD_W, 96, new Color(255, 240, 210, 255), 20);
         rent.setPosition(0, 460, 0);
         rent.active = false;
+        skin(rent, 'panel_card');
         page.addChild(rent);
         const rl = label('小书童带回了 0 铜钱', 27, C.ink, true);
         rl.setPosition(-90, 0, 0);
@@ -88,6 +101,9 @@ export class Home {
         // 两座建筑卡
         this.buildBuilding('math', '算学馆', '口算四选一, 答对 2 x 等级 铜钱', C.math, 190);
         this.buildBuilding('en', '书斋', '看图听音认单词, 答对 3 x 等级 铜钱', C.en, -140);
+
+        // 小书童立绘(AI), 站右下空地
+        skinSprite(page, 'kid_idle', 140, 224).setPosition(290, -330, 0);
 
         // 底部说明(banner 安全区上方)
         const foot = label('答题赚铜钱 · 建楼升级 · 小书童离线打工', 24, C.ink2, false);
@@ -110,14 +126,16 @@ export class Home {
         const card = panel(CARD_W, 270, C.card, 24);
         card.setPosition(0, y, 0);
         this.page.addChild(card);
+        skin(card, 'panel_card');
 
-        // 左侧房子图标
+        // 左侧建筑图: Graphics 简笔画兜底, AI 建筑图加载成功后盖在其上
         const icon = uiNode('icon');
         icon.setPosition(-195, 10, 0);
         const ut = icon.addComponent(UITransform);
         ut.setContentSize(150, 150);
         const g = icon.addComponent(Graphics);
         drawHouse(g, 150, 150, color);
+        skinSprite(icon, key === 'math' ? 'bld_math' : 'bld_en', 170, 170);
         card.addChild(icon);
 
         // 名称 + 等级
@@ -134,15 +152,18 @@ export class Home {
         de.setPosition(90, 38, 0);
         card.addChild(de);
 
-        // 按钮行: 开始答题 / 升级
+        // 按钮行: 开始答题(AI 青蓝胶囊主按钮) / 升级(AI 米色软按钮)
         const play = button(card, 250, 92, '开始答题', color, new Color(255, 255, 255, 255), () => {
             if (!this.store.ready) { Toast.show('还在连接书院...', C.red); return; }
             new QuizPanel(this.store, this.overlays, key);
         }, 30);
         play.setPosition(-100, -70, 0);
+        skin(play, 'btn_main', undefined, 55);
 
         const up = this.upBtns[key] = button(card, 230, 92, '升级', C.btnSoft, C.ink, () => this.onUpgrade(key), 28);
         up.setPosition(175, -70, 0);
+        this.upLabs[key] = up.children[0] ? up.children[0].getComponent(Label) : null;
+        skin(up, 'btn_soft');
     }
 
     /** 初始化占位卡: 连接中 / 失败可点重试 */
@@ -189,8 +210,8 @@ export class Home {
     refresh(): void {
         const s: MgState | null = this.store.state;
         if (!s) return;
-        if (this.coinsLab) this.coinsLab.string = '铜钱 ' + s.coins;
-        if (this.knowLab) this.knowLab.string = '学识 ' + s.knowledge;
+        if (this.coinsLab) this.coinsLab.string = String(s.coins);
+        if (this.knowLab) this.knowLab.string = String(s.knowledge);
         if (this.lvLabs.math) this.lvLabs.math.string = 'Lv.' + s.math_lv;
         if (this.lvLabs.en) this.lvLabs.en.string = 'Lv.' + s.english_lv;
 
@@ -201,7 +222,7 @@ export class Home {
                 ? (s.upgrade_cost[key === 'math' ? 'math' : 'english'] || 0) : 0;
             const b = this.upBtns[key];
             if (!b || !b.isValid) return;
-            const l = b.children[0] ? b.children[0].getComponent(Label) : null;
+            const l = this.upLabs[key];
             const full = lv >= MAX_LV;
             const poor = s.coins < cost;
             if (l) l.string = full ? '已满级' : ('升级 -' + cost);
@@ -227,7 +248,7 @@ export class Home {
         if (!s.can_sign) { Toast.show('今天已经签过啦', C.ink2); return; }
         this.store.doSign().then((r: any) => {
             if (r.signed === false) Toast.show('今天已经签过啦', C.ink2);
-            else Toast.show('签到 +' + r.coins_added + ' 铜钱', C.goldDark);
+            else { sfx('coin'); Toast.show('签到 +' + r.coins_added + ' 铜钱', C.goldDark); }
         }).catch((e: any) => Toast.show(String(e && e.message || '签到失败'), C.red));
     }
 
@@ -236,6 +257,7 @@ export class Home {
         if (!s || s.offline_coins <= 0) return;
         const go = () => {
             this.store.doCollect(ad).then((r: any) => {
+                sfx('coin');
                 Toast.show('收取 +' + r.gained + ' 铜钱', C.goldDark);
             }).catch((e: any) => Toast.show(String(e && e.message || '收取失败'), C.red));
         };
@@ -258,6 +280,7 @@ export class Home {
         if (lv >= MAX_LV) { Toast.show('已经满级啦', C.ink2); return; }
         if (s.coins < cost) { Toast.show('铜钱不够, 再答几题吧', C.red); return; }
         this.store.doUpgrade(key === 'math' ? 'math' : 'english').then((r: any) => {
+            sfx('coin');
             Toast.show((key === 'math' ? '算学馆' : '书斋') + '升到 Lv.' + r.lv, C.math);
         }).catch((e: any) => Toast.show(String(e && e.message || '升级失败'), C.red));
     }
