@@ -18,7 +18,11 @@ import { Toast } from './game/Toast';
 
 const { ccclass } = _decorator;
 
-class Boot extends Component {
+// 必须用标准 @ccclass 装饰器: 编辑器管线按「脚本 uuid<->组件类」绑定才能反序列化
+// 场景里的 __type__(压缩 uuid); 手动包装 ccclass(name)(cls) 只按类名注册,
+// 场景会报 Missing class 3feiyejRtOb6XDmw2Ofxos(2026-11-16 首开实测踩坑)
+@ccclass('Boot')
+export class Boot extends Component {
     onLoad(): void {
         // 设计分辨率: 高度恒定 1280, 宽度按屏幕比例缩放
         view.setDesignResolutionSize(720, 1280, ResolutionPolicy.FIXED_HEIGHT);
@@ -68,8 +72,3 @@ class Boot extends Component {
     }
 }
 
-// 不用装饰器语法(Cocos 的 JS/TS 双兼容 + 本地 tsc 校验简单): 手动等价注册
-let BootClass: any = Boot;
-BootClass = ccclass('Boot')(BootClass);
-
-export { BootClass as Boot };
