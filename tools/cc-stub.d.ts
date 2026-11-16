@@ -48,6 +48,7 @@ export class Node {
     };
     addChild(child: Node): Node;
     setPosition(x: number, y: number, z?: number): void;
+    setScale(x: number, y: number, z?: number): void;
     on(type: string, cb: (...args: any[]) => void, target?: any): void;
     off(type: string, cb?: (...args: any[]) => void, target?: any): void;
     setSiblingIndex(index: number): void;
@@ -73,7 +74,7 @@ export class UITransform {
 
 export class Widget {}
 
-export class Label {
+export class Label extends Component {
     string: string;
     fontSize: number;
     lineHeight: number;
@@ -104,6 +105,7 @@ export class Graphics {
     clear(): void;
     rect(x: number, y: number, w: number, h: number): void;
     roundRect(x: number, y: number, w: number, h: number, r: number): void;
+    circle(x: number, y: number, r: number): void;
     moveTo(x: number, y: number): void;
     lineTo(x: number, y: number): void;
     close(): void;
@@ -195,10 +197,18 @@ export const resources: {
 
 export function tween(target?: any): TweenStub;
 
+/** opts 镜像真引擎 ITweenOption(常用子集): easing 字符串如 backOut/sineInOut/quadOut */
+export interface TweenOpt {
+    easing?: string;
+    onUpdate?: () => void;
+}
+
 export class TweenStub {
-    to(duration: number, props: any): TweenStub;
-    by(duration: number, props: any): TweenStub;
+    to(duration: number, props: any, opts?: TweenOpt): TweenStub;
+    by(duration: number, props: any, opts?: TweenOpt): TweenStub;
     delay(duration: number): TweenStub;
     call(cb: () => void): TweenStub;
+    union(): TweenStub;
+    repeatForever(): TweenStub;
     start(): TweenStub;
 }
