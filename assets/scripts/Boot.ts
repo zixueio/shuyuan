@@ -18,9 +18,11 @@ import { Toast } from './game/Toast';
 
 const { ccclass } = _decorator;
 
-// 必须用标准 @ccclass 装饰器: 编辑器管线按「脚本 uuid<->组件类」绑定才能反序列化
-// 场景里的 __type__(压缩 uuid); 手动包装 ccclass(name)(cls) 只按类名注册,
-// 场景会报 Missing class 3feiyejRtOb6XDmw2Ofxos(2026-11-16 首开实测踩坑)
+// 标准 @ccclass 装饰器写法。类与场景 __type__ 的绑定链: packer 产物执行时
+// _RF.push({}, 压缩uuid, "Boot") 注册别名, 场景反序列化按压缩 uuid 精确查找;
+// 2026-11-16 首开 Missing class 的真根因是场景里手算压缩 uuid 用错变体
+// (22 字符「2hex+10组」, 引擎实为 23 字符「5hex+9组」), 装饰器不是根因,
+// 见 tools/compress_uuid.py 与 README
 @ccclass('Boot')
 export class Boot extends Component {
     onLoad(): void {

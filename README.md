@@ -25,8 +25,11 @@
 编辑器里新建 2D 场景 → 空节点挂 `assets/scripts/Boot.ts` → 保存为 main
 → 项目设置里设为启动场景, 效果完全等价（Boot 全自构建, 场景内容本来只有它）。
 
-**Boot.ts.meta 勿删**: 场景里 Boot 组件按压缩 uuid `3feiyejRtOb6XDmw2Ofxos`
-（手算引擎 compressUuid, `tools/compress_uuid.py` 可自校验）引用脚本,
+**Boot.ts.meta 勿删**: 场景里 Boot 组件按压缩 uuid `3f7a2yejRtOb6XDmw2Ofxos`
+引用脚本（引擎 packer 产物 `_RF.push` 实证形式=23 字符「前 5 hex 原样保留+
+9 组 3hex→2b64」, `tools/compress_uuid.py` 可自校验并锚定该外部真值; 曾用
+22 字符「2hex+10组」错误变体手算出 `3feiyejRtOb6XDmw2Ofxos`, 场景反序列化
+按精确字符串查类别名查不到 → Missing class, 2026-11-16 实测修复）,
 meta 固定 uuid `3f7a2c9e-8d1b-4e6f-a5c3-9b0d8e7f1a2c`; 删了 meta 会被编辑器
 重新分配导致场景 missing script（其余脚本无 meta, 编辑器打开自动补全, 无妨）。
 
