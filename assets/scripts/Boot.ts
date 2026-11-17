@@ -13,7 +13,7 @@ import {
 } from 'cc';
 import { C, uiNode } from './game/Theme';
 import { Store } from './game/Store';
-import { SightJump } from './game/SightJump';
+import { FlipDemo } from './game/FlipDemo';
 import { Toast } from './game/Toast';
 
 const { ccclass } = _decorator;
@@ -68,8 +68,8 @@ export class Boot extends Component {
         // ---- 游戏装配 ----
         Toast.bind(root);
         const store = new Store();
-        const game = new SightJump(store, root);
-        game.startInit();
+        // 临时: 翻翻乐样卡确认宿主(用户确认卡面后换回 SightJump 正式玩法)
+        new FlipDemo(root).startInit();
 
         ut.setContentSize(view.getVisibleSize());
     }
