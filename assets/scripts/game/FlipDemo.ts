@@ -1,19 +1,19 @@
 /**
- * 翻翻乐 — 关卡宿主(第 3 关)
+ * 翻翻乐 — 关卡宿主(第 4 关)
  *
  * 用户定版: 每一关新增一个单词(第 N 关 = 220 词表前 N 个词);
- * 当前第 3 关 = a + and(复习) + away(新词) -> 3 词 6 卡(每词=单词卡+图片卡)。
+ * 当前第 4 关 = a and away(复习) + big(新词) -> 4 词 8 卡(每词=单词卡+图片卡)。
  * 全部盖着, 点哪张翻面都读词(FlipCard playOneShot, 连翻两张都出声);
  * 翻开两卡是同一个词 = 配对成功, 上锁「留下」+ 横幅 + 粒子;
  * 不是一对 = 900ms 后两卡自动翻回再试;
- * 三对全配齐 = 第 3 关完成 -> 「再玩一次」。
+ * 本关对数全配齐 = 第 LEVEL 关完成 -> 「再玩一次」。
  * 布局(720x1280): 标题(560) + 副题(496) + 卡区容器(LAYOUTS[LEVEL].zoom 缩放)
  * + 横幅(-360) + 再玩一次(-445) + 底部提示(-560)。缩放挂容器而不挂卡片:
  * FlipCard 翻面 tween/pulse 都以卡片 scale 1 为基准, 容器统一缩放互不打架。
  * 每关布局进 LAYOUTS 表(卡位要人工审): 第 2 关沿用已确认的对角 2x2;
- * 第 3 关 2 行 3 列, 固定洗牌序保证同词两卡不同列(防上下相邻一眼看穿),
- * 世界校验: 宽 (365*2+300)*0.62=638<720, 高 (230*2+400)*0.62=533 → ±267
- * 不碰副题(496)与横幅(-360)。
+ * 第 3 关 2 行 3 列(zoom 0.62, 世界校验宽 638<720 高 ±267 不碰副题/横幅);
+ * 第 4 关 2 行 4 列(zoom 0.48, 宽 (547*2+300)*0.48=669<720 高 ±206),
+ * 固定洗牌序保证同词两卡不同列(防上下相邻一眼看穿)。
  * 数据 = resources/data/sight_words.json(levels[0].words 前 LEVEL 个, py 拼音
  * 已预生成进词库); 插画 = word_art_raw -> assets/resources/flipart/{a,and,away}.png。
  */
@@ -21,7 +21,7 @@ import { Node, Vec3, Label, JsonAsset, resources, UITransform } from 'cc';
 import { C, uiNode, label, popIn, burst, button } from './Theme';
 import { FlipCard, FlipWord } from './FlipCard';
 
-const LEVEL = 3;   // 第 N 关 = 词表前 N 个词(插画齐一关开一关)
+const LEVEL = 4;   // 第 N 关 = 词表前 N 个词(插画齐一关开一关)
 
 /** 每关布局(卡本体 300x400, zoom=卡区容器缩放, 槽位=容器内局部坐标):
  *  kind=word 单词卡 / pic 图片卡, idx=词序号。同词两卡不同列(第 3 关)。 */
@@ -45,6 +45,19 @@ const LAYOUTS: Record<number, { zoom: number; slots: Slot[] }> = {
             { x: -365, y: -230, kind: 'pic', idx: 0 },
             { x: 0, y: -230, kind: 'word', idx: 2 },
             { x: 365, y: -230, kind: 'pic', idx: 2 },
+        ],
+    },
+    4: {   // 2 行 4 列: 上排 词a 图big 词away 图and / 下排 图away 词and 图a 词big
+        zoom: 0.48,
+        slots: [
+            { x: -547, y: 230, kind: 'word', idx: 0 },
+            { x: -183, y: 230, kind: 'pic', idx: 3 },
+            { x: 183, y: 230, kind: 'word', idx: 2 },
+            { x: 547, y: 230, kind: 'pic', idx: 1 },
+            { x: -547, y: -230, kind: 'pic', idx: 2 },
+            { x: -183, y: -230, kind: 'word', idx: 1 },
+            { x: 183, y: -230, kind: 'pic', idx: 0 },
+            { x: 547, y: -230, kind: 'word', idx: 3 },
         ],
     },
 };
@@ -71,7 +84,7 @@ export class FlipDemo {
         const title = label('翻翻乐', 56, C.ink, true);
         title.setPosition(0, 560, 0);
         root.addChild(title);
-        const sub = label('第 3 关 · 3 词 6 卡 · 复习 a and + 新词 away', 28, C.ink2);
+        const sub = label('第 4 关 · 4 词 8 卡 · 复习 a and away + 新词 big', 28, C.ink2);
         sub.setPosition(0, 496, 0);
         root.addChild(sub);
 

@@ -1,10 +1,12 @@
-// 翻翻乐第 3 关(3 词 6 卡)探针: 无头 Edge 打开 localhost:7456, 手动载入 main 场景,
-// 七态走全流程并截图: ①6 卡背面+副题 ②翻词卡 a(拼音 yī(gè)) ③词 a+词 and
+// 翻翻乐第 4 关(4 词 8 卡)探针: 无头 Edge 打开 localhost:7456, 手动载入 main 场景,
+// 八态走全流程并截图: ①8 卡背面+副题 ②翻词卡 a(拼音 yī(gè)) ③词 a+词 and
 // 配错->900ms 自动回翻 ④词 a+图 a 配对 ⑤词 and+图 and 配对 ⑥词 away+图 away
-// 配对 -> 第 3 关完成 ⑦「再玩一次」复位。全程收集 console/pageerror。
-// 布局(FlipDemo LAYOUTS[3], zoom 0.62): 上排 图and(-226,143) 词a(0,143)
-// 词and(226,143) / 下排 图a(-226,-143) 词away(0,-143) 图away(226,-143);
-// 世界坐标 = 局部*0.62 四舍五入。「再玩一次」按钮(0,-445)。
+// 配对 ⑦词 big+图 big 配对 -> 第 4 关完成 ⑧「再玩一次」复位。
+// 全程收集 console/pageerror。
+// 布局(FlipDemo LAYOUTS[4], zoom 0.48): 上排 词a(-263,110) 图big(-88,110)
+// 词away(88,110) 图and(263,110) / 下排 图away(-263,-110) 词and(-88,-110)
+// 图a(88,-110) 词big(263,-110); 世界坐标 = 局部*0.48 四舍五入。
+// 「再玩一次」按钮(0,-445)。
 // 坐标公式: 预览 canvas 横屏 1280x720 溢出视口居中,
 //   ppu = rect.height/1280, cx = rect.left + rect.w/2 + designX*ppu,
 //   cy = rect.top + rect.h/2 - designY*ppu (Cocos y 向上, 屏幕 y 向下)。
@@ -17,13 +19,15 @@ const URL = 'http://localhost:7456/';
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-// 世界坐标常量(与 FlipDemo LAYOUTS[3] slots*zoom 对齐)
-const P_AND = { x: -226, y: 143 };   // 图卡 and(左上)
-const W_A = { x: 0, y: 143 };        // 词卡 a(上中)
-const W_AND = { x: 226, y: 143 };    // 词卡 and(右上)
-const P_A = { x: -226, y: -143 };    // 图卡 a(左下)
-const W_AWAY = { x: 0, y: -143 };    // 词卡 away(下中)
-const P_AWAY = { x: 226, y: -143 };  // 图卡 away(右下)
+// 世界坐标常量(与 FlipDemo LAYOUTS[4] slots*zoom 对齐)
+const W_A = { x: -263, y: 110 };     // 词卡 a(上排左1)
+const P_BIG = { x: -88, y: 110 };    // 图卡 big(上排左2)
+const W_AWAY = { x: 88, y: 110 };    // 词卡 away(上排左3)
+const P_AND = { x: 263, y: 110 };    // 图卡 and(上排右1)
+const P_AWAY = { x: -263, y: -110 }; // 图卡 away(下排左1)
+const W_AND = { x: -88, y: -110 };   // 词卡 and(下排左2)
+const P_A = { x: 88, y: -110 };      // 图卡 a(下排左3)
+const W_BIG = { x: 263, y: -110 };   // 词卡 big(下排右1)
 const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
 
 (async () => {
@@ -64,7 +68,7 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
     logs.push(`[probe] manual loadScene: ${loadMsg}`);
     await sleep(5000);
 
-    // 读场景状态: 6 张卡(位置/面/正面标签) + 可见文案(横幅/按钮断言用)
+    // 读场景状态: 8 张卡(位置/面/正面标签) + 可见文案(横幅/按钮断言用)
     const readState = () => page.evaluate(() => {
         const scene = cc.director.getScene();
         if (!scene) return { ok: false };
@@ -116,12 +120,12 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
         if (!cond) process.exitCode = 1;
     };
 
-    // ---- 1. 6 卡全背面 + 副题 ----
+    // ---- 1. 8 卡全背面 + 副题 ----
     let st = await readState();
-    check('6 张卡就位', st.ok && st.cards.length === 6);
-    check('全背面', st.cards.length === 6 && st.cards.every((c) => c.faces.back && !c.faces.front));
-    check('副题「3 词 6 卡」上屏', st.texts.some((t) => t.indexOf('3 词 6 卡') >= 0));
-    await page.screenshot({ path: 'tools/flip3_back.png' });
+    check('8 张卡就位', st.ok && st.cards.length === 8);
+    check('全背面', st.cards.length === 8 && st.cards.every((c) => c.faces.back && !c.faces.front));
+    check('副题「4 词 8 卡」上屏', st.texts.some((t) => t.indexOf('4 词 8 卡') >= 0));
+    await page.screenshot({ path: 'tools/flip4_back.png' });
 
     // ---- 2. 翻词卡 a: 拼音行 + 中文出现 ----
     await clickAt(W_A.x, W_A.y);
@@ -131,7 +135,7 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
     check('词卡 a 翻到正面', wa && wa.faces.front);
     check('拼音行 yī(gè) 上卡', wa && wa.labels.some((t) => t.indexOf('yī') >= 0));
     check('中文 一(个) 上卡', wa && wa.labels.some((t) => t.indexOf('一') >= 0));
-    await page.screenshot({ path: 'tools/flip3_word_a.png' });
+    await page.screenshot({ path: 'tools/flip4_word_a.png' });
 
     // ---- 3. 再翻词卡 and = 配错 -> 900ms 自动双回翻 ----
     await clickAt(W_AND.x, W_AND.y);
@@ -140,7 +144,7 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
     const wand = cardAt(st, W_AND);
     check('词卡 and 翻到正面', wand && wand.faces.front);
     check('and 拼音 hé 上卡', wand && wand.labels.some((t) => t === 'hé'));
-    await page.screenshot({ path: 'tools/flip3_mismatch.png' });
+    await page.screenshot({ path: 'tools/flip4_mismatch.png' });
     await sleep(1100);
     st = await readState();
     const mb1 = cardAt(st, W_A);
@@ -155,7 +159,7 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
     st = await readState();
     check('横幅「配对成功」出现', st.texts.some((t) => t.indexOf('配对成功') >= 0));
     check('横幅带词义 a · 一(个)', st.texts.some((t) => t.indexOf('一(个)') >= 0));
-    await page.screenshot({ path: 'tools/flip3_match_a.png' });
+    await page.screenshot({ path: 'tools/flip4_match_a.png' });
 
     // ---- 5. 词 and + 图 and = 第二对 ----
     await clickAt(W_AND.x, W_AND.y);
@@ -166,9 +170,9 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
     const pa2 = cardAt(st, P_AND);
     check('图卡 and 翻到正面(插画卡)', pa2 && pa2.faces.front);
     check('横幅带词义 and · 和', st.texts.some((t) => t.indexOf('and · 和') >= 0));
-    await page.screenshot({ path: 'tools/flip3_match_and.png' });
+    await page.screenshot({ path: 'tools/flip4_match_and.png' });
 
-    // ---- 6. 词 away + 图 away = 第三对 -> 第 3 关完成 ----
+    // ---- 6. 词 away + 图 away = 第三对 ----
     await clickAt(W_AWAY.x, W_AWAY.y);
     await sleep(1400);
     st = await readState();
@@ -181,16 +185,32 @@ const BTN_AGAIN = { x: 0, y: -445 }; // 再玩一次
     st = await readState();
     const paw = cardAt(st, P_AWAY);
     check('图卡 away 翻到正面(插画卡)', paw && paw.faces.front);
-    check('横幅「第 3 关完成」出现', st.texts.some((t) => t.indexOf('第 3 关完成') >= 0));
-    check('「再玩一次」按钮出现', st.texts.some((t) => t === '再玩一次'));
-    await page.screenshot({ path: 'tools/flip3_done.png' });
+    check('横幅带词义 away · 离开', st.texts.some((t) => t.indexOf('离开') >= 0));
+    await page.screenshot({ path: 'tools/flip4_match_away.png' });
 
-    // ---- 7. 再玩一次 -> 全卡回背面复位 ----
+    // ---- 7. 词 big + 图 big = 第四对 -> 第 4 关完成 ----
+    await clickAt(W_BIG.x, W_BIG.y);
+    await sleep(1400);
+    st = await readState();
+    const wbig = cardAt(st, W_BIG);
+    check('词卡 big 翻到正面', wbig && wbig.faces.front);
+    check('big 拼音 dà de 上卡', wbig && wbig.labels.some((t) => t.indexOf('dà') >= 0));
+    check('中文 大的 上卡', wbig && wbig.labels.some((t) => t.indexOf('大的') >= 0));
+    await clickAt(P_BIG.x, P_BIG.y);
+    await sleep(1600);
+    st = await readState();
+    const pbig = cardAt(st, P_BIG);
+    check('图卡 big 翻到正面(插画卡)', pbig && pbig.faces.front);
+    check('横幅「第 4 关完成」出现', st.texts.some((t) => t.indexOf('第 4 关完成') >= 0));
+    check('「再玩一次」按钮出现', st.texts.some((t) => t === '再玩一次'));
+    await page.screenshot({ path: 'tools/flip4_done.png' });
+
+    // ---- 8. 再玩一次 -> 全卡回背面复位 ----
     await clickAt(BTN_AGAIN.x, BTN_AGAIN.y);
     await sleep(1500);
     st = await readState();
-    check('再玩一次后全回背面', st.cards.length === 6 && st.cards.every((c) => c.faces.back));
-    await page.screenshot({ path: 'tools/flip3_replay.png' });
+    check('再玩一次后全回背面', st.cards.length === 8 && st.cards.every((c) => c.faces.back));
+    await page.screenshot({ path: 'tools/flip4_replay.png' });
 
     console.log(`=== RESULTS ===\n${results.join('\n')}`);
     const errs = logs.filter((l) => l.startsWith('[pageerror]') || l.startsWith('[reqfail]'));
