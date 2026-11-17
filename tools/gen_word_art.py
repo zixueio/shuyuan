@@ -119,10 +119,18 @@ def main():
     if not todo:
         print("全部插画已存在(用 --all 强制重生成)")
         return
+    failed = []
     for word in todo:
-        gen_one(word, WORDS[word], key)
+        try:
+            gen_one(word, WORDS[word], key)
+        except Exception as e:  # noqa: BLE001 单词失败不中断整批(审核拦截/网络抖动),
+            print("[SKIP] %s: %s" % (word, e))  # 记录后继续, 结尾汇总
+            failed.append(word)
         time.sleep(2)
-    print("完成: %d/%d" % (len(todo), len(WORDS)))
+    print("完成: %d/%d" % (len(todo) - len(failed), len(todo)))
+    if failed:
+        print("失败 %d 个: %s" % (len(failed), ",".join(failed)))
+        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -2,15 +2,39 @@
   "ver": "1.0.27",
   "importer": "image",
   "imported": true,
-  "uuid": "a70692bf-2fca-491f-a3f0-a7726f8b4fd6",
+  "uuid": "3238c6cf-a72b-4177-8aac-7b825fb60a21",
   "files": [
     ".json",
     ".png"
   ],
   "subMetas": {
+    "6c48a": {
+      "importer": "texture",
+      "uuid": "3238c6cf-a72b-4177-8aac-7b825fb60a21@6c48a",
+      "displayName": "a",
+      "id": "6c48a",
+      "name": "texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "3238c6cf-a72b-4177-8aac-7b825fb60a21",
+        "visible": false
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
     "f9941": {
       "importer": "sprite-frame",
-      "uuid": "a70692bf-2fca-491f-a3f0-a7726f8b4fd6@f9941",
+      "uuid": "3238c6cf-a72b-4177-8aac-7b825fb60a21@f9941",
       "displayName": "a",
       "id": "f9941",
       "name": "spriteFrame",
@@ -89,35 +113,11 @@
           ]
         },
         "isUuid": true,
-        "imageUuidOrDatabaseUri": "a70692bf-2fca-491f-a3f0-a7726f8b4fd6@6c48a",
+        "imageUuidOrDatabaseUri": "3238c6cf-a72b-4177-8aac-7b825fb60a21@6c48a",
         "atlasUuid": "",
         "trimType": "auto"
       },
       "ver": "1.0.12",
-      "imported": true,
-      "files": [
-        ".json"
-      ],
-      "subMetas": {}
-    },
-    "6c48a": {
-      "importer": "texture",
-      "uuid": "a70692bf-2fca-491f-a3f0-a7726f8b4fd6@6c48a",
-      "displayName": "a",
-      "id": "6c48a",
-      "name": "texture",
-      "userData": {
-        "wrapModeS": "repeat",
-        "wrapModeT": "repeat",
-        "minfilter": "linear",
-        "magfilter": "linear",
-        "mipfilter": "none",
-        "anisotropy": 0,
-        "isUuid": true,
-        "imageUuidOrDatabaseUri": "a70692bf-2fca-491f-a3f0-a7726f8b4fd6",
-        "visible": false
-      },
-      "ver": "1.0.22",
       "imported": true,
       "files": [
         ".json"
@@ -129,6 +129,6 @@
     "type": "sprite-frame",
     "fixAlphaTransparencyArtifacts": false,
     "hasAlpha": false,
-    "redirect": "a70692bf-2fca-491f-a3f0-a7726f8b4fd6@6c48a"
+    "redirect": "3238c6cf-a72b-4177-8aac-7b825fb60a21@6c48a"
   }
 }
