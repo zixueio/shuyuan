@@ -146,6 +146,8 @@ export class Texture2D {
 
 export class AudioClip {
     play(): void;
+    /** 独立声道播一次(同 clip 可叠播; 翻卡两卡同词共享实例靠它不互吞) */
+    playOneShot(volume?: number): void;
 }
 
 /** resources.load JSON 资源返回类型, .json 为解析后对象 */
@@ -194,6 +196,8 @@ export const _decorator: {
 
 export const assetManager: {
     loadRemote(url: string, cb: (err: Error | null, asset: any) => void): void;
+    /** 加载分包 bundle(cards 等), 到手后 bundle.load('路径/资源', Type, cb) */
+    loadBundle(name: string, cb: (err: Error | null, bundle: any) => void): void;
 };
 
 /** assets/resources 内置资源包(打包进小游戏, 不走域名白名单) */

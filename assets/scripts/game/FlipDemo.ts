@@ -1,5 +1,5 @@
 /**
- * 翻翻乐 — 关卡宿主(滑动窗口制, 用户定版 2026-11-17:
+ * 英语争霸 — 关卡宿主(滑动窗口制, 用户定版 2026-11-17:
  * 「每个词出现到七关后就不用再出现了, 所以最多 14 张牌」):
  * 每一关新增一个单词, 每个词入关后保留 7 关退出 ——
  * 第 N 关 = 220 词表第 max(1,N-6)..N 个词(共 min(N,7) 词, 最多 14 卡),
@@ -18,14 +18,16 @@
  * (850+150)*0.35=350<360); 7=2x7(0.30, (1020+150)*0.30=351<360);
  * 3~7 每列上下正好一词一图(交错)且上下 idx 不同 -> 同词两卡必不同列
  * (防上下相邻一眼看穿)。
- * 数据 = resources/data/sight_words.json(22 级 x 10 词展平 = 220);
- * 插画 = assets/resources/flipart/{art}.png(word_prompts.py 220 条
- * 批量生成, import_flipart.py 入库)。
+ * 数据 = WordData.ts 内联词表(源 resources/data/sight_words.json, 22 级 x
+ * 10 词展平 = 220; CLI 构建稳定跳过 resources bundle, 内联随脚本直出);
+ * 插画 = cards 分包 flipart/{art}.webp(word_prompts.py 220 条批量生成)。
  */
-import { Node, Vec3, Label, JsonAsset, resources, UITransform } from 'cc';
-import { C, uiNode, label, popIn, burst, button } from './Theme';
+import { Node, Vec3, Label, UITransform, Graphics } from 'cc';
+import { C, uiNode, label, burst, button, getCards } from './Theme';
 import { FlipCard, FlipWord } from './FlipCard';
-import { saveLocal, loadLocal } from '../api/mgapi';
+import { SIGHT_WORDS } from './WordData';
+import { saveLocal, loadLocal, mgReport } from '../api/mgapi';
+import { Toast } from './Toast';
 
 const PROG_KEY = 'flip_prog_v1';   // 进度存档键: {level: 第几关}
 const MAX_LEVEL = 220;             // 220 词全表
@@ -158,9 +160,15 @@ export class FlipDemo {
             ? Math.floor(saved.level) : 1;
         this.level = lv >= 1 && lv <= MAX_LEVEL ? lv : 1;
 
-        const title = label('翻翻乐', 56, C.ink, true);
+        const title = label('英语争霸', 56, C.ink, true);
         title.setPosition(0, 560, 0);
         root.addChild(title);
+        // 版本戳: 屏顶小字——真机肉眼即验「跑的是哪份构建」。v26·1119 屏显
+        // 诊断只到「失败了」; v27·1119 加远程上报(boot/err/包/卡全链信标
+        // POST ruci /mgapi/mglog), 扫码后服务器直读真机完整崩溃栈, 不再盲猜
+        const ver = label('v27·1119', 20, C.ink2, true);
+        ver.setPosition(0, 615, 0);
+        root.addChild(ver);
         const sub = label('', 28, C.ink2);
         sub.setPosition(0, 496, 0);
         root.addChild(sub);
@@ -189,20 +197,65 @@ export class FlipDemo {
         this.again.setPosition(170, -445, 0);
         this.again.active = false;
 
-        const hint = label('翻开一张单词卡和一张图片卡, 同一个词就配成一对', 26, C.ink2);
+        const hintBase = '翻开一张单词卡和一张图片卡, 同一个词就配成一对';
+        const hint = label(hintBase, 26, C.ink2);
         hint.setPosition(0, -560, 0);
         root.addChild(hint);
+        // 缺图/缺声计数轮询: FlipCard 静态计数 1.5s 刷进提示行(全 0 不加后缀)
+        // ——PC 模拟器读的是本地包, 仍缺图/缺声时数字能区分「包里缺文件」
+        // 与「加载链路失败」, 真机黑盒排障不再盲猜; v26 带出最近失败原因
+        const hintLab = hint.getComponent(Label) as Label;
+        setInterval(() => {
+            const a = FlipCard.artFail, s = FlipCard.auFail;
+            if (a || s) {
+                hintLab.string = hintBase + '  ⚠缺图' + a + ' 缺声' + s
+                    + (FlipCard.lastArtErr ? ' ' + FlipCard.lastArtErr : '');
+            }
+        }, 1500);
+
+        // Graphics 渲染探针(round10): 至今真机上被确认可见的只有 Label
+        // (标题/说明), 没有任何一处 Graphics 内容(卡面/蛋/占位圈/按钮)
+        // 被确认渲染过——左下角金色小方块: 看得到=Graphics 正常, 卡牌
+        // 隐身在别处; 看不到=真机 Graphics 不渲染, 下轮改纯 Label 重写卡面
+        const probe = uiNode('gprobe');
+        probe.addComponent(UITransform).setContentSize(44, 44);
+        const pg = probe.addComponent(Graphics);
+        pg.fillColor = C.gold;
+        pg.roundRect(-22, -22, 44, 44, 8);
+        pg.fill();
+        probe.setPosition(-240, -615, 0);
+        root.addChild(probe);
     }
 
-    /** Boot 调: 异步拉 220 词表(22 级展平), 进当前关发卡 */
+    /** Boot 调: 词表已内联(WordData.ts), 22 级展平进池, 进当前关发卡。
+     *  round9: 词表异常时屏显诊断(真机黑盒唯一可见窗口), 不再静默断链。
+     *  v26: cards 分包探针——启动即 loadBundle 一次(loadBundle 内部缓存,
+     *  卡片 addArt/loadClip 复用同一结果), 失败原因写副标题; 此前缺图只
+     *  出「⚠缺图N」计数, 分包加载失败与包内缺文件在屏上无法区分。 */
     startInit(): void {
-        resources.load('data/sight_words', JsonAsset,
-            (err: Error | null, asset: JsonAsset | null) => {
-                if (err || !asset || !asset.json) return;
-                const data = asset.json as { levels: { words: FlipWord[] }[] };
-                for (const lv of data.levels) this.allWords.push(...lv.words);
-                this.startLevel();
-            });
+        const lvls = SIGHT_WORDS && SIGHT_WORDS.levels;
+        if (!lvls || !lvls.length) {
+            const msg = '词表加载失败 levels=' + (lvls ? lvls.length : 'undefined');
+            this.subLab.string = msg;
+            Toast.show(msg, C.red);
+            return;
+        }
+        for (const lv of lvls) this.allWords.push(...lv.words);
+        mgReport('start', {words: this.allWords.length, level: this.level});
+        this.startLevel();
+        // v29: 探针改走 getCards 单例(与 addArt/loadClip/sfx 同一条加载链,
+        // 只发一次 loadBundle, 成功缓存); 直接 assetManager.loadBundle 会与
+        // 并发 addArt 各开一趟, 空桩 game.js 时代挂 17s 的失败态被 SystemJS
+        // 缓存后整包全爆——统一入口后游戏代码永不重入加载链。
+        getCards((bundle: any) => {
+            mgReport('bundle', {ok: !!bundle});
+            if (!bundle) {
+                const msg = 'cards包失败 null';
+                this.subLab.string += '  ⚠' + msg;
+                Toast.show(msg, C.red);
+            }
+            // 成功不占屏: 卡翻开后图直接出 = 分包健康, 不打扰
+        });
     }
 
     /** 进关发卡: 第 N 关词窗 = slice(max(0,N-7), N), 布局按窗口词数选档;
@@ -212,6 +265,13 @@ export class FlipDemo {
         const win = this.allWords.slice(Math.max(0, n - WINDOW), n);
         this.total = win.length;
         const lay = LAYOUTS[win.length];
+        if (!lay) {
+            const msg = '布局缺失 win=' + win.length + ' level=' + n
+                + ' pool=' + this.allWords.length;
+            this.subLab.string = msg;
+            Toast.show(msg, C.red);
+            return;
+        }
         this.zoom = lay.zoom;
         this.slots = lay.slots;
         this.zone.setScale(this.zoom, this.zoom, 1);
@@ -224,15 +284,38 @@ export class FlipDemo {
         this.next.active = false;
         for (const c of this.cards) c.node.destroy();
         this.cards.length = 0;
+        // v25 硬化: 单卡建失败不炸整关——一张卡构造抛错(引擎建节点异常)
+        // 只损失该卡, 其余照常出, 失败数红字上屏; 此前一张卡炸 = 整关白屏
+        // + 微信原生报错浮层, 真机黑盒读不出哪步死的
+        let bad = 0;
         this.slots.forEach((s, i) => {
-            const c = new FlipCard(win[s.idx], this.zone, {
-                kind: s.kind,
-                onFront: () => this.onFront(c),
-            });
-            c.node.setPosition(s.x, s.y, 0);
-            popIn(c.node, i * 0.08);
-            this.cards.push(c);
+            try {
+                const c = new FlipCard(win[s.idx], this.zone, {
+                    kind: s.kind,
+                    onFront: () => this.onFront(c),
+                });
+                c.node.setPosition(s.x, s.y, 0);
+                // round10: 卡牌出生即全显, 彻底删掉入场动画依赖——round9 的
+                // popIn+1.5s 强制 opacity 保险下真机仍全黑且零 ERR, 说明保险
+                // 链路(tween/setTimeout)本身在真机不可靠, 不再赌
+                c.node.setScale(1, 1, 1);
+                this.cards.push(c);
+            } catch (err: any) {
+                bad += 1;
+                console.error('[FlipDemo] card#' + i + ' build fail', err);
+            }
         });
+        if (bad) {
+            const msg = '建卡失败 ' + bad + '/' + this.slots.length;
+            this.subLab.string += '  ⚠' + msg;
+            Toast.show(msg, C.red);
+        }
+        // v27 每关收尾上报: 卡建了几个/缺图缺声计数/最近失败原因——扫码后
+        // 服务器一眼看出卡区是真没建出来还是建了渲染丢
+        mgReport('level', {level: this.level, total: this.total,
+            cards: this.cards.length, bad: bad,
+            artFail: FlipCard.artFail, auFail: FlipCard.auFail,
+            artErr: FlipCard.lastArtErr});
     }
 
     /** 副题: 词多(>=5)折两行防溢出 —— 行1 关卡信息, 行2 复习+新词 */

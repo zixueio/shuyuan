@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-gen_word_art.py — 翻翻乐 220 Sight Words 单词插画管线(智谱 CogView API)
+gen_word_art.py — 英语争霸 220 Sight Words 单词插画管线(智谱 CogView API)
 
 与 gen_art.py(书院古风 UI)分开: 单词卡插画要求「直观一眼可认」——
 单主体大居中/纯白底/无场景元素, 全套风格一致由 WORD_STYLE 前缀保证。

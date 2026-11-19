@@ -11,6 +11,10 @@ extensions/
 node_modules/
 __pycache__/
 
+# 本地调试产物(构建日志/时效二维码)
+tools/*.log
+tools/preview_qr*
+
 # 系统文件
 .DS_Store
 Thumbs.db

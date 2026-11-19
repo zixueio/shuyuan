@@ -1,4 +1,4 @@
-# /mgapi 后端契约（书院小掌柜 ← ruci 服务器）
+# /mgapi 后端契约（英语争霸 ← ruci 服务器）
 
 基地址 `https://mweb.cn`（nginx → gunicorn ruci, 蓝图 `mgapi.py`, url_prefix `/mgapi`）。
 认证: `Authorization: Bearer <token>`（token 180 天, itsdangerous salt=mgapi）。

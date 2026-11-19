@@ -1,0 +1,47 @@
+{
+  "platform": "wechatgame",
+  "debug": false,
+  "outputName": "wechatgame",
+  "taskName": "wechatgame",
+  "buildMode": "normal",
+  "bundleConfigs": [
+    {
+      "root": "db://assets/cards",
+      "name": "cards",
+      "priority": 8,
+      "compressionType": "subpackage",
+      "isRemote": false,
+      "output": true
+    },
+    {
+      "root": "db://assets/resources",
+      "name": "resources",
+      "priority": 8,
+      "compressionType": "none",
+      "isRemote": false,
+      "output": true
+    }
+  ],
+  "mainBundleCompressionType": "subpackage",
+  "packages": {
+    "wechatgame": {
+      "orientation": "portrait",
+      "appid": "wx5e63ae78e9cefa2b",
+      "buildOpenDataContextTemplate": "",
+      "separateEngine": false,
+      "highPerformanceMode": false
+    }
+  },
+  "name": "英语争霸",
+  "engineModulesConfigKey": "defaultConfig",
+  "buildPath": "project://build",
+  "md5Cache": false,
+  "skipCompressTexture": false,
+  "sourceMaps": false,
+  "mangleProperties": false,
+  "packAutoAtlas": true,
+  "startSceneAssetBundle": false,
+  "useSplashScreen": true,
+  "nativeCodeBundleMode": "wasm",
+  "startScene": "c2b4a6d8-0e1f-4a3b-9c5d-7e8f9a0b1c2d"
+}

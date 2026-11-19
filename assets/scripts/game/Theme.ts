@@ -1,5 +1,5 @@
 /**
- * 书院小掌柜 — 主题配色 + 代码 UI 工厂 + 动效工具箱
+ * 英语争霸 — 主题配色 + 代码 UI 工厂 + 动效工具箱
  *
  * 设计系统(参考 2048/跳一跳的精致感来源——一致性+手感, 而非贴图):
  *   卡片 = 白底 + 柔影 + 细描边(drawPanel shadow);
@@ -374,16 +374,50 @@ export function skin(n: Node, art: string, tint?: Color, border = 70): void {
 
 const _clips: { [k: string]: AudioClip | null | undefined } = {};
 
-/** 内置音效(click/coin/right/wrong), 加载结果缓存 */
+/* ---------- cards 分包单例(2026-11-19 首成功后全灭实证的兜底) ----------
+ * 空桩 game.js 时代(根修前)首次 loadBundle 的 System.import 挂 17s 超时失败,
+ * 期间 bundle 已 init 进引擎缓存 -> 并发调用蒙混成功; 失败落定后引擎清缓存 +
+ * SystemJS 缓存失败态 -> 后续 loadBundle 全爆「Unable to instantiate」。
+ * 单例三防: ①首成功缓存 bundle 永不重入加载链 ②in-flight 排队防并发重入
+ * ③失败不缓存, 下次调用自动重试。根修(分包 game.js require index.js)落地后
+ * 这里只是双保险, 但并发 addArt 风暴下仍值得保留。 */
+let _cardsBundle: any = null;
+let _cardsBusy = false;
+const _cardsQueue: ((b: any) => void)[] = [];
+
+/** 取 cards bundle(单例缓存; 失败不缓存可重试, 并发调用排队等同一趟) */
+export function getCards(cb: (bundle: any) => void): void {
+    if (_cardsBundle) { cb(_cardsBundle); return; }
+    _cardsQueue.push(cb);
+    if (_cardsBusy) return;
+    _cardsBusy = true;
+    assetManager.loadBundle('cards', (err: Error | null, bundle: any) => {
+        _cardsBusy = false;
+        if (!err && bundle) _cardsBundle = bundle;
+        const q = _cardsQueue.splice(0, _cardsQueue.length);
+        for (const fn of q) {
+            try { fn(_cardsBundle); } catch (e) { /* ignore */ }
+        }
+    });
+}
+
+/** 内置音效(click/coin/right/wrong), 加载结果缓存。
+ *  resources 包在微信构建里被剔除(round8 启动卡死教训), 直走 cards 分包
+ *  同名录副本(sfx/<name>), 经 getCards 单例; 失败记 null 不再重复请求。 */
 export function sfx(name: string): void {
     const hit = _clips[name];
     if (hit !== undefined) {
         if (hit) { try { hit.play(); } catch (e) { /* ignore */ } }
         return;
     }
-    resources.load('sfx/' + name, AudioClip, (err: Error | null, clip: any) => {
-        const ok: AudioClip | null = (!err && clip) ? clip as AudioClip : null;
+    const keep = (ok: AudioClip | null): void => {
         _clips[name] = ok;
         if (ok) { try { ok.play(); } catch (e) { /* ignore */ } }
+    };
+    getCards((bundle: any) => {
+        if (!bundle) { keep(null); return; }
+        bundle.load('sfx/' + name, AudioClip, (e2: Error | null, c2: any) => {
+            keep((!e2 && c2) ? c2 as AudioClip : null);
+        });
     });
 }

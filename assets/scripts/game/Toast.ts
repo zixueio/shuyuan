@@ -1,5 +1,5 @@
 /**
- * 书院小掌柜 — 顶部浮条提示
+ * 英语争霸 — 顶部浮条提示
  * 短消息从顶部淡入, 停留后淡出销毁; 多条同时显示时自动向下错开。
  */
 import { Node, Color, Vec3, UIOpacity, tween } from 'cc';

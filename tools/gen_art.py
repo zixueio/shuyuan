@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-gen_art.py — 书院小掌柜 AI 出图管线(智谱 CogView API)
+gen_art.py — 英语争霸 AI 出图管线(智谱 CogView API)
 
 用途: 生成全套游戏美术素材原图 → tools/art_raw/<name>.png
       (后续 process_art.py 去背/裁剪/缩放到 assets/resources/ui/)

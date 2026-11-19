@@ -1,5 +1,5 @@
 /**
- * 书院小掌柜 — ruci /mgapi 后端封装
+ * 英语争霸 — ruci /mgapi 后端封装
  *
  * 构建到微信小游戏后 wx 全局可用(wx.request / wx.setStorageSync)。
  * 认证: Bearer token(180 天), 游客一键注册的账号密码只返回一次,
@@ -170,4 +170,24 @@ export function loadLocal(key: string): any {
 /** atlas 音频目录匿名直链(词光真人发音 + tts-*.mp3 预生成都在这) */
 export function audioUrl(au: string): string {
     return BASE_URL + '/atlas/audio/uk/' + au;
+}
+
+/**
+ * 远程诊断上报(v27 真机排障): POST /mgapi/mglog 落服务器 mglog.jsonl。
+ * 真机黑盒崩溃栈/分包失败原因直接进服务器日志, 不再依赖扫码人读屏转录;
+ * 只在微信环境发(浏览器预览有本地探针, 不报避免跨域噪音);
+ * fire-and-forget, 失败静默, 永不影响游戏逻辑。
+ */
+export function mgReport(tag: string, extra?: any): void {
+    if (typeof wx === 'undefined') return;   // 浏览器预览不上报
+    try {
+        wx.request({
+            url: BASE_URL + '/mgapi/mglog',
+            method: 'POST',
+            data: { tag: tag, extra: extra || {} },
+            header: {'content-type': 'application/json'},
+            success() { /* 忽略 */ },
+            fail() { /* 忽略 */ },
+        });
+    } catch (e) { /* 忽略 */ }
 }

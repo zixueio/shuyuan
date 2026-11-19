@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-word_prompts.py — 翻翻乐 220 Sight Words 全量出图描述(供 gen_word_art.py 使用)
+word_prompts.py — 英语争霸 220 Sight Words 全量出图描述(供 gen_word_art.py 使用)
 
 规则(用户 2026-11-17 定版):
 - 免确认自主画完 220 词; 每词一图, 风格由 gen_word_art.WORD_STYLE 统一
